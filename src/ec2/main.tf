@@ -12,7 +12,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Used to filter AMIs and retrieve the AMI id
+# Used to filter AMIs and retrieve the AMI id -> AMI Lookup
 data "aws_ami" "amazon" {
   owners      = ["amazon"]
   most_recent = true
@@ -44,9 +44,9 @@ resource "aws_security_group" "server_sg" {
   }
 
   egress {
-    from_port = 0
-    to_port = 0
-    protocol = "-1"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
     cidr_blocks = ["0.0.0.0/0"]
   }
 }
@@ -57,8 +57,24 @@ resource "aws_instance" "default_instance" {
   instance_type = "t3.micro"
   key_name      = "awskeypair"
 
-  security_groups  = [aws_security_group.server_sg.name]
-  user_data = fileexists("${path.module}/scripts/ec2-user-data.sh") ? file("${path.module}/scripts/ec2-user-data.sh") : local.ec2_user_data
+  security_groups = [aws_security_group.server_sg.name]
+  user_data       = fileexists("${path.module}/scripts/ec2-user-data.sh") ? file("${path.module}/scripts/ec2-user-data.sh") : local.ec2_user_data
+
+  root_block_device {
+    volume_size           = 10
+    delete_on_termination = true
+  }
+
+  # Additional ebs device
+  ebs_block_device {
+    device_name           = "/dev/sda1"
+    volume_size           = 2
+    delete_on_termination = true
+
+    tags = {
+      "provisioned_by" = "terraform"
+    }
+  }
 
   tags = {
     "name"           = "default_instance"
