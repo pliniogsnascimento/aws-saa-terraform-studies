@@ -14,18 +14,18 @@ provider "aws" {
 
 # Used to filter AMIs and retrieve the AMI id
 data "aws_ami" "amazon" {
-  owners      = ["137112412989"]
+  owners      = ["amazon"]
   most_recent = true
 
   filter {
-    name   = "image-id"
-    values = ["ami-048f6ed62451373d9"]
+    name   = "name"
+    values = ["amzn2-ami-hvm-2.0.20210421.0-x86_64-gp2"]
   }
 }
 
-resource "aws_security_group" "allow_ssh" {
-  name        = "allow_ssh"
-  description = "A security group to allow ssh into instances"
+resource "aws_security_group" "server_sg" {
+  name        = "server_sg"
+  description = "A security group to server nedeed rules."
 
   ingress {
     cidr_blocks = ["0.0.0.0/0"]
@@ -42,6 +42,13 @@ resource "aws_security_group" "allow_ssh" {
     protocol    = "tcp"
     to_port     = 80
   }
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
 resource "aws_instance" "default_instance" {
@@ -50,7 +57,7 @@ resource "aws_instance" "default_instance" {
   instance_type = "t3.micro"
   key_name      = "awskeypair"
 
-  security_groups  = [aws_security_group.allow_ssh.name]
+  security_groups  = [aws_security_group.server_sg.name]
   user_data = fileexists("${path.module}/scripts/ec2-user-data.sh") ? file("${path.module}/scripts/ec2-user-data.sh") : local.ec2_user_data
 
   tags = {
